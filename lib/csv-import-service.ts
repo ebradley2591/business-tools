@@ -98,18 +98,37 @@ export const CSV_FORMATS: Record<string, {
       'E-mail': 'email',
       'Secondary Contact Name': 'secondaryContactName',
       'Contact': 'secondaryContactName',
-      'Contact Person': 'secondaryContactName',
-      'Secondary Contact': 'secondaryContactName',
       'Secondary Contact Phone': 'secondaryContactPhone',
-      'Customer Type': 'customerType',
+      'Mobile Phone': 'secondaryContactPhone',
       'Notes': 'notes',
       'Comments': 'notes',
       'Description': 'notes',
       'Tags': 'tags',
+      'Category': 'tags',
+      'Classification': 'tags',
       'Owner': 'ownershipHistory',
-      'Current Owner': 'ownershipHistory',
       'Property Owner': 'ownershipHistory',
+      'Current Owner': 'ownershipHistory',
+      'Customer Type': 'customerType',
+      'Type': 'customerType',
+      'Account Number': 'accountNumber',
+      'Account #': 'accountNumber',
+      'Customer Since': 'createdDate',
+      'Created Date': 'createdDate',
+      'Join Date': 'createdDate',
+      'Last Activity': 'lastActivity',
+      'Last Contact': 'lastActivity',
+      'Last Visit': 'lastActivity'
     },
+    skipFields: [
+      'ID', 'Customer ID', 'Internal ID', 'Reference', 'Status', 'Active',
+      'Balance', 'Credit Limit', 'Terms', 'Tax Code', 'Tax Item',
+      'Ship To', 'Bill To', 'Job Status', 'Priority', 'Rating'
+    ]
+  },
+  CUSTOM: {
+    name: 'Custom CSV',
+    fieldMappings: {},
     skipFields: []
   }
 };
@@ -474,7 +493,7 @@ export class CSVImportService {
   }
 
   static async previewImport(analysis: CSVAnalysis): Promise<ImportPreview> {
-    const formatConfig = CSV_FORMATS[analysis.detectedFormat as keyof typeof CSV_FORMATS];
+    const formatConfig = CSV_FORMATS[analysis.detectedFormat as keyof typeof CSV_FORMATS] || CSV_FORMATS.CUSTOM;
     
     // Create sample customer data for preview using actual CSV data
     const sampleData: any[] = [];
@@ -511,6 +530,27 @@ export class CSVImportService {
         
         sampleData.push(sampleCustomer);
       }
+    } else {
+      // If no sample data, create a mock sample for preview
+      const mockCustomer: any = {
+        name: 'Sample Customer',
+        phone: '(555) 123-4567',
+        address: '123 Main St',
+        email: 'sample@example.com',
+        customFields: {},
+        tags: [],
+        ownershipHistory: []
+      };
+      
+      // Add custom fields based on the field mapping
+      analysis.headers.forEach(header => {
+        const mappedField = analysis.fieldMapping[header];
+        if (mappedField?.startsWith('custom_')) {
+          (mockCustomer.customFields as Record<string, string>)[header] = `Sample ${header} value`;
+        }
+      });
+      
+      sampleData.push(mockCustomer);
     }
 
     return {

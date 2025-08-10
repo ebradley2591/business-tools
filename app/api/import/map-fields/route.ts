@@ -26,11 +26,12 @@ export async function POST(request: NextRequest) {
     console.log('Map Fields API: Custom mappings:', Object.keys(customMappings).length);
     console.log('Map Fields API: Duplicate handling:', duplicateHandling);
 
-    // Validate custom mappings
+    // Validate custom mappings - allow "custom" as a valid mapping
     const validMappings = ['name', 'phone', 'email', 'address', 'secondaryContactName', 'secondaryContactPhone', 'notes', 'tags', 'ownershipHistory', 'customerType', 'accountNumber', 'createdDate', 'lastActivity', 'custom', 'skip'];
     
     const invalidMappings = Object.values(customMappings).filter(mapping => !validMappings.includes(mapping as string));
     if (invalidMappings.length > 0) {
+      console.log('Map Fields API: Invalid mappings found:', invalidMappings);
       return NextResponse.json({ 
         error: 'Invalid field mappings provided', 
         invalidMappings 
@@ -40,14 +41,14 @@ export async function POST(request: NextRequest) {
     // Create a mock analysis object for preview generation
     const mockAnalysis: CSVAnalysis = {
       headers,
-      totalRows: 0,
+      totalRows: 1, // Set to 1 for preview generation
       sampleData: {},
       fieldMapping: {},
       customFieldsToCreate: [],
       skippedFields: [],
       validationIssues: [],
       detectedFormat: 'CUSTOM',
-      estimatedRecords: 0
+      estimatedRecords: 1
     };
 
     // Apply custom mappings to create field mapping
@@ -85,6 +86,12 @@ export async function POST(request: NextRequest) {
     mockAnalysis.fieldMapping = fieldMapping;
     mockAnalysis.customFieldsToCreate = customFieldsToCreate;
     mockAnalysis.skippedFields = skippedFields;
+
+    console.log('Map Fields API: Field mapping created:', {
+      fieldMapping,
+      customFieldsToCreate: customFieldsToCreate.map(f => f.name),
+      skippedFields
+    });
 
     // Generate preview
     const preview = await CSVImportService.previewImport(mockAnalysis);
