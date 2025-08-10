@@ -1,0 +1,120 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Helper function to check if user is authenticated
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Helper function to get user's tenant ID from custom claims
+    function getUserTenantId() {
+      return request.auth.token.tenant_id;
+    }
+
+    // Helper function to get user's role from custom claims
+    function getUserRole() {
+      return request.auth.token.role;
+    }
+
+    // Helper function to check if user's tenant is active
+    function isTenantActive() {
+      return request.auth.token.subscription_status == 'active';
+    }
+
+    // Helper function to check if user is admin
+    function isAdmin() {
+      return getUserRole() == 'admin';
+    }
+
+    // Helper function to check if user is tool admin
+    function isToolAdmin() {
+      return getUserRole() == 'tool_admin';
+    }
+
+    // Helper function to check if document belongs to user's tenant
+    function belongsToUserTenant(resource) {
+      return resource.data.tenant_id == getUserTenantId();
+    }
+
+    // Helper function to check if user can access tenant
+    function canAccessTenant() {
+      return isAuthenticated() && isTenantActive();
+    }
+
+    // Tenants collection - only admins can read their own tenant
+    match /tenants/{tenantId} {
+      allow read: if isAuthenticated() && 
+        (tenantId == getUserTenantId() || isAdmin());
+      allow write: if false; // Only allow writes via admin SDK
+    }
+
+    // Tenant users collection - users can read their own profile
+    match /tenantUsers/{userId} {
+      allow read: if isAuthenticated() && 
+        (userId == request.auth.uid || 
+         (getUserTenantId() == resource.data.tenant_id && isAdmin()));
+      allow write: if false; // Only allow writes via admin SDK
+    }
+
+    // Subscriptions collection - only admins can read their tenant's subscription
+    match /subscriptions/{subscriptionId} {
+      allow read: if isAuthenticated() && 
+        subscriptionId == getUserTenantId() && isAdmin();
+      allow write: if false; // Only allow writes via admin SDK
+    }
+
+    // Customers collection - scoped to tenant
+    match /customers/{customerId} {
+      allow read: if canAccessTenant() && belongsToUserTenant(resource);
+      allow create: if canAccessTenant() && 
+        request.resource.data.tenant_id == getUserTenantId();
+      allow update: if canAccessTenant() && belongsToUserTenant(resource);
+      allow delete: if canAccessTenant() && belongsToUserTenant(resource);
+    }
+
+    // Custom fields collection - scoped to tenant, only admins and tool admins can modify
+    match /customFields/{fieldId} {
+      allow read: if canAccessTenant() && belongsToUserTenant(resource);
+      allow create: if canAccessTenant() && (isAdmin() || isToolAdmin()) && 
+        request.resource.data.tenant_id == getUserTenantId();
+      allow update: if canAccessTenant() && (isAdmin() || isToolAdmin()) && belongsToUserTenant(resource);
+      allow delete: if canAccessTenant() && (isAdmin() || isToolAdmin()) && belongsToUserTenant(resource);
+    }
+
+    // Tenant invites collection - only admins can manage invites for their tenant
+    match /tenantInvites/{inviteId} {
+      allow read: if isAuthenticated() && 
+        resource.data.tenant_id == getUserTenantId() && isAdmin();
+      allow create: if canAccessTenant() && isAdmin() && 
+        request.resource.data.tenant_id == getUserTenantId();
+      allow update: if canAccessTenant() && isAdmin() && 
+        resource.data.tenant_id == getUserTenantId();
+      allow delete: if canAccessTenant() && isAdmin() && 
+        resource.data.tenant_id == getUserTenantId();
+    }
+
+    // Activation codes collection - only tool admins can manage
+    match /activationCodes/{codeId} {
+      allow read: if isAuthenticated() && isToolAdmin();
+      allow write: if false; // Only allow writes via admin SDK
+    }
+
+    // Activation code usage collection - only tool admins can read
+    match /activationCodeUsage/{usageId} {
+      allow read: if isAuthenticated() && isToolAdmin();
+      allow write: if false; // Only allow writes via admin SDK
+    }
+
+    // Audit logs collection - only admins can read their tenant's logs
+    match /auditLogs/{logId} {
+      allow read: if isAuthenticated() && 
+        resource.data.tenant_id == getUserTenantId() && isAdmin();
+      allow write: if false; // Only allow writes via admin SDK
+    }
+
+     // Deny all other access
+     match /{document=**} {
+       allow read, write: if false;
+     }
+  }
+}

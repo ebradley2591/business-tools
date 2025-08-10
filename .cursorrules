@@ -1,0 +1,77 @@
+# =============================
+# Cursor AI Development Rules
+# =============================
+
+[security]
+# Ensure all user inputs are validated and sanitized
+require_input_validation = true
+# Prevent exposing secrets in client-side code
+disallow_client_exposed_env_vars = true
+# Require authentication for protected routes and APIs
+require_auth_guard = true
+# Sanitize all file uploads and enforce size/type restrictions
+require_file_upload_safety = true
+# All requests should use HTTPS or secure protocols
+enforce_https = true
+
+[efficiency]
+# Avoid full dataset loads – use pagination or lazy loading
+enforce_pagination_for_lists = true
+# Use debounce or throttling on search/filter inputs
+enforce_debounce_on_search = true
+# Reuse shared components and avoid unnecessary duplication
+enforce_component_reuse = true
+# Prevent blocking async operations in UI
+disallow_blocking_async_calls = true
+
+[reliability]
+# Do not remove core features when debugging unless flagged
+preserve_features_on_debug = true
+# Handle errors in all async logic
+require_error_handling_in_async = true
+# Ensure fallback UI exists for network/data failures
+require_ui_fallback = true
+# Flag changes that affect shared logic across modules
+enforce_cross_module_consistency = true
+# Log all exceptions or crashes
+require_error_logging = true
+
+[debugging]
+# Never remove code unless explicitly marked deprecated
+preserve_non_deprecated_code = true
+# Always explain the fix with comments when modifying behavior
+require_debug_comment_log = true
+# Identify and document all side effects of changes
+require_side_effect_check = true
+
+[product_integrity]
+# Cross-check feature implementation against build plan
+enforce_feature_plan_alignment = true
+# Use comments to document purpose of all core features
+require_feature_purpose_comment = true
+# Warn if shared components are edited without reference tracking
+warn_on_shared_component_edit = true
+# Disallow silent regression of any core feature
+disallow_feature_regression = true
+
+[testing]
+# Re-run validation tests after core logic or UI changes
+require_validation_tests_on_change = true
+# Maintain sample import files and test flows
+require_test_data_validation = true
+
+[code_quality]
+# Ensure all code output is of the best quality, consistent, and follows current best practices
+require_best_practice_code_quality = true
+# If summary says a field is skipped, it must default to skipped
+enforce_skip_default_for_skipped_fields = true
+# If a field has data, it must be properly formatted everywhere it appears
+enforce_consistent_data_formatting = true
+# All functions and features must be tenant-specific with proper isolation
+enforce_tenant_isolation_for_all_operations = true
+# Maintain intended functionality consistency across all system components
+preserve_system_functionality_consistency = true
+
+[metadata]
+description = "Ruleset to ensure Cursor AI builds match the AutomateHub Studio development standards: secure, efficient, reliable, and aligned with the build plan."
+version = "1.0.0"
