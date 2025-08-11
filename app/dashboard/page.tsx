@@ -20,6 +20,7 @@ export default function DashboardPage() {
   const [selectedCustomers, setSelectedCustomers] = useState<string[]>([]);
   const [bulkDeleteLoading, setBulkDeleteLoading] = useState(false);
      const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>({
+     customerId: true,
      name: true,
      phone: true,
      address: true,
@@ -35,6 +36,7 @@ export default function DashboardPage() {
    // Update visible columns when custom fields change or customers data changes
    useEffect(() => {
      const newVisibleColumns: Record<string, boolean> = {
+       customerId: true,
        name: true,
        phone: true,
        address: true,
@@ -199,6 +201,7 @@ export default function DashboardPage() {
 
   const filteredCustomers = customers.filter(customer => {
     const matchesSearch = !searchTerm || 
+      customer.customerId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       customer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       customer.phone.includes(searchTerm) ||
       customer.address.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -407,6 +410,7 @@ export default function DashboardPage() {
               <thead className="bg-gray-50">
                 <tr>
                   {canBulkDelete && <th className="table-header" style={{ width: '5%' }}></th>}
+                  {visibleColumns.customerId && <th className="table-header" style={{ width: '12%' }}>Customer ID</th>}
                   {visibleColumns.name && <th className="table-header" style={{ width: '15%' }}>Name</th>}
                   {visibleColumns.phone && <th className="table-header" style={{ width: '12%' }}>Phone</th>}
                   {visibleColumns.address && <th className="table-header" style={{ width: '20%' }}>Address</th>}
@@ -438,6 +442,11 @@ export default function DashboardPage() {
                           onChange={(e) => handleSelectCustomer(customer.id, e.target.checked)}
                           className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                         />
+                      </td>
+                    )}
+                    {visibleColumns.customerId && (
+                      <td className="table-cell text-sm truncate" title={customer.customerId || ''}>
+                        {customer.customerId || '-'}
                       </td>
                     )}
                     {visibleColumns.name && (

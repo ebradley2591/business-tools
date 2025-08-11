@@ -134,6 +134,10 @@ export default function CustomerDetailPage() {
                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                  <div className="space-y-4">
                    <div>
+                     <label className="block text-sm font-medium text-gray-700 mb-1">Customer ID</label>
+                     <p className="text-sm text-gray-900 font-medium">{customer.customerId || 'Not assigned'}</p>
+                   </div>
+                   <div>
                      <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
                      <p className="text-sm text-gray-900 font-medium">{customer.name}</p>
                    </div>
