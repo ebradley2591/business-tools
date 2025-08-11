@@ -25,16 +25,46 @@ export async function POST(request: NextRequest) {
     console.log('Map Fields API: Headers count:', headers.length);
     console.log('Map Fields API: Custom mappings:', Object.keys(customMappings).length);
     console.log('Map Fields API: Duplicate handling:', duplicateHandling);
+    console.log('Map Fields API: Headers:', headers);
+    console.log('Map Fields API: Custom mappings object:', customMappings);
+
+    // Additional debugging for the Inactive field specifically
+    if (customMappings['Inactive']) {
+      console.log('Map Fields API: Inactive field received:', customMappings['Inactive']);
+      console.log('Map Fields API: Inactive field type received:', typeof customMappings['Inactive']);
+      console.log('Map Fields API: Inactive field length received:', customMappings['Inactive'].length);
+      console.log('Map Fields API: Inactive field char codes received:', Array.from(customMappings['Inactive']).map(c => c.charCodeAt(0)));
+    }
 
     // Validate custom mappings - allow "custom" as a valid mapping
-    const validMappings = ['name', 'phone', 'email', 'address', 'secondaryContactName', 'secondaryContactPhone', 'notes', 'tags', 'ownershipHistory', 'customerType', 'accountNumber', 'createdDate', 'lastActivity', 'custom', 'skip'];
+    const validMappings = ['name', 'phone', 'email', 'address', 'address1', 'address2', 'city', 'state', 'zip', 'secondaryContactName', 'secondaryContactPhone', 'notes', 'tags', 'ownershipHistory', 'customerType', 'accountNumber', 'createdDate', 'lastActivity', 'custom', 'skip'];
+    
+    // Fix any potential 'ship' corruption to 'skip'
+    Object.keys(customMappings).forEach(key => {
+      if (customMappings[key] === 'ship') {
+        console.log('Map Fields API: Fixing corrupted value "ship" to "skip" for field:', key);
+        customMappings[key] = 'skip';
+      }
+    });
+    
+    console.log('Map Fields API: Valid mappings:', validMappings);
+    console.log('Map Fields API: All mapping values:', Object.values(customMappings));
     
     const invalidMappings = Object.values(customMappings).filter(mapping => !validMappings.includes(mapping as string));
     if (invalidMappings.length > 0) {
       console.log('Map Fields API: Invalid mappings found:', invalidMappings);
+      console.log('Map Fields API: Invalid mappings details:', invalidMappings.map(mapping => ({ value: mapping, type: typeof mapping })));
+      
+      // Log which specific fields have invalid mappings
+      const invalidFields = Object.entries(customMappings)
+        .filter(([header, mapping]) => !validMappings.includes(mapping as string))
+        .map(([header, mapping]) => ({ header, mapping }));
+      console.log('Map Fields API: Fields with invalid mappings:', invalidFields);
+      
       return NextResponse.json({ 
         error: 'Invalid field mappings provided', 
-        invalidMappings 
+        invalidMappings,
+        invalidFields 
       }, { status: 400 });
     }
 

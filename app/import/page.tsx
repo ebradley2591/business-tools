@@ -67,12 +67,33 @@ export default function ImportPage() {
           if (mapping?.startsWith('custom_')) {
             initialMappings[header] = 'custom';
           } else if (data.analysis.skippedFields.includes(header)) {
-            // Fields in skipFields now default to 'skip' instead of 'custom'
             initialMappings[header] = 'skip';
+            // Special debugging for the Inactive field
+            if (header === 'Inactive') {
+              console.log('Frontend: Processing Inactive field - setting to skip');
+              console.log('Frontend: Inactive field mapping value:', initialMappings[header]);
+            }
           } else if (mapping) {
             initialMappings[header] = mapping;
+          } else {
+            // Default unmapped fields to 'custom'
+            initialMappings[header] = 'custom';
           }
         });
+        
+        console.log('Frontend: Analysis data received:', data.analysis);
+        console.log('Frontend: Skipped fields from backend:', data.analysis.skippedFields);
+        console.log('Frontend: Initial mappings created:', initialMappings);
+        console.log('Frontend: All mapping values:', Object.values(initialMappings));
+        
+        // Additional debugging for the Inactive field specifically
+        if (initialMappings['Inactive']) {
+          console.log('Frontend: Inactive field final mapping:', initialMappings['Inactive']);
+          console.log('Frontend: Inactive field type:', typeof initialMappings['Inactive']);
+          console.log('Frontend: Inactive field length:', initialMappings['Inactive'].length);
+          console.log('Frontend: Inactive field char codes:', Array.from(initialMappings['Inactive']).map(c => c.charCodeAt(0)));
+        }
+        
         setCustomMappings(initialMappings);
         
         setMessage(`File analyzed successfully. Detected format: ${data.preview.detectedFormat}`);
@@ -93,19 +114,52 @@ export default function ImportPage() {
     if (!analysis) return;
 
     setAnalyzing(true);
+    
+    // Debug logging
+    console.log('Frontend: Analysis headers:', analysis.headers);
+    console.log('Frontend: Custom mappings:', customMappings);
+    console.log('Frontend: Duplicate handling:', duplicateHandling);
+    console.log('Frontend: Custom mappings values:', Object.values(customMappings));
+    
+    // Sanitize mappings to prevent corruption
+    const sanitizedMappings = { ...customMappings };
+    Object.keys(sanitizedMappings).forEach(key => {
+      // Fix any corrupted 'ship' values to 'skip'
+      if (sanitizedMappings[key] === 'ship') {
+        console.log(`Frontend: Fixing corrupted value for ${key} from 'ship' to 'skip'`);
+        sanitizedMappings[key] = 'skip';
+      }
+    });
+    
+    // If any values were fixed, update the state
+    if (JSON.stringify(sanitizedMappings) !== JSON.stringify(customMappings)) {
+      setCustomMappings(sanitizedMappings);
+    }
+    
+    // Additional debugging for the Inactive field specifically
+    if (customMappings['Inactive']) {
+      console.log('Frontend: Inactive field before sending to backend:', customMappings['Inactive']);
+      console.log('Frontend: Inactive field type before sending:', typeof customMappings['Inactive']);
+      console.log('Frontend: Inactive field length before sending:', customMappings['Inactive'].length);
+      console.log('Frontend: Inactive field char codes before sending:', Array.from(customMappings['Inactive']).map(c => c.charCodeAt(0)));
+    }
+    
     try {
       const token = await getAuthToken();
+      const requestBody = {
+        headers: analysis.headers,
+        customMappings: sanitizedMappings, // Use sanitized mappings
+        duplicateHandling
+      };
+      console.log('Frontend: Request body being sent:', requestBody);
+      
       const response = await fetch('/api/import/map-fields', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          headers: analysis.headers,
-          customMappings,
-          duplicateHandling
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       const data = await response.json();
@@ -126,10 +180,12 @@ export default function ImportPage() {
         setUploadStatus('success');
         setShowFieldMapping(false);
       } else {
+        console.log('Frontend: API error response:', data);
         setMessage(data.error || 'Failed to update field mappings.');
         setUploadStatus('error');
       }
     } catch (error) {
+      console.error('Frontend: Error in updateFieldMappings:', error);
       setMessage('An error occurred while updating field mappings.');
       setUploadStatus('error');
     } finally {
@@ -162,13 +218,35 @@ export default function ImportPage() {
 
       if (response.ok) {
         setUploadStatus('success');
-        let message = `Successfully imported ${data.imported} customers.`;
+        let message = '';
+        
+        // Show different messages based on what happened
+        if (data.imported > 0) {
+          message = `Successfully imported ${data.imported} new customers.`;
+        } else if (data.duplicates > 0 && data.imported === 0) {
+          // When no new imports but duplicates were handled
+          message = `Successfully processed ${data.duplicates} existing customers.`;
+        } else {
+          message = 'Import completed successfully.';
+        }
+        
+        // Add details about custom fields
         if (data.customFieldsCreated > 0) {
           message += ` Created ${data.customFieldsCreated} custom fields automatically.`;
         }
+        
+        // Add details about how duplicates were handled based on the duplicateHandling setting
         if (data.duplicates > 0) {
-          message += ` Handled ${data.duplicates} duplicate customers.`;
+          if (duplicateHandling === 'update') {
+            message += ` Updated ${data.duplicates} existing customers.`;
+          } else if (duplicateHandling === 'overwrite') {
+            message += ` Overwrote ${data.duplicates} existing customers.`;
+          } else {
+            message += ` Found ${data.duplicates} duplicate customers.`;
+          }
         }
+        
+        // Add details about skipped records
         if (data.skipped > 0) {
           message += ` Skipped ${data.skipped} duplicate customers.`;
         }
@@ -202,50 +280,6 @@ export default function ImportPage() {
         <div className="space-y-6">
           <div>
             <h2 className="text-lg font-medium text-gray-900 mb-4">Smart CSV Import</h2>
-            <div className="bg-gray-50 rounded-lg p-4">
-              <p className="text-sm text-gray-700 mb-2">
-                Our smart import system automatically recognizes and maps columns from any accounting software export:
-              </p>
-              
-              <div className="mb-4">
-                <h3 className="font-medium text-gray-900 mb-2">Required Fields</h3>
-                <ul className="text-sm text-gray-600 space-y-1">
-                  <li><strong>Customer Name/Name/Company Name</strong> - Customer's full name</li>
-                  <li><strong>Phone Number/Phone/Telephone</strong> - Primary phone number</li>
-                  <li><strong>Address/Street Address</strong> - Primary address</li>
-                </ul>
-              </div>
-
-              <div className="mb-4">
-                <h3 className="font-medium text-gray-900 mb-2">Automatically Mapped Fields</h3>
-                <ul className="text-sm text-gray-600 space-y-1">
-                  <li><strong>Email/Email Address</strong> - Email address</li>
-                  <li><strong>City/State/Zip/Postal Code</strong> - Location information</li>
-                  <li><strong>Secondary Contact</strong> - Alternative contact details</li>
-                  <li><strong>Tags/Category/Classification</strong> - Customer categorization</li>
-                  <li><strong>Notes/Comments</strong> - Additional information</li>
-                  <li><strong>Owner/Property Owner</strong> - Property ownership information</li>
-                  <li><strong>Customer Type</strong> - Customer classification</li>
-                  <li><strong>Account Number</strong> - Customer account identifier</li>
-                  <li><strong>Customer Since Date</strong> - Customer acquisition date</li>
-                  <li><strong>Last Activity Date</strong> - Most recent customer interaction</li>
-                </ul>
-              </div>
-
-              <div>
-                <h3 className="font-medium text-gray-900 mb-2">Custom Fields</h3>
-                <p className="text-sm text-gray-600 mb-2">
-                  Any additional columns will be automatically created as custom fields with appropriate types:
-                </p>
-                <ul className="text-sm text-gray-600 space-y-1">
-                  <li><strong>Account Numbers</strong> - Automatically detected as text fields</li>
-                  <li><strong>Credit Limits</strong> - Automatically detected as number fields</li>
-                  <li><strong>Dates</strong> - Automatically detected as date fields</li>
-                  <li><strong>Status Fields</strong> - Automatically detected as select fields</li>
-                  <li><strong>Any Other Data</strong> - Intelligently categorized based on content</li>
-                </ul>
-              </div>
-            </div>
           </div>
 
           <div>
@@ -365,7 +399,6 @@ export default function ImportPage() {
                     <div>
                       <span className="text-blue-700">Optional Fields:</span>
                       <span className="ml-1 font-medium">{analysis.skippedFields.length}</span>
-                      <span className="text-xs text-gray-500 ml-2">(default to skipped, can be enabled as custom fields)</span>
                     </div>
                   </div>
                   {analysis.validationIssues.length > 0 && (
@@ -445,11 +478,6 @@ export default function ImportPage() {
             </div>
 
             <div className="space-y-6">
-              <div className="bg-blue-50 rounded-lg p-4">
-                <p className="text-sm text-blue-700">
-                  Choose how each CSV column should be mapped. You can map to standard fields, create custom fields, or skip columns entirely.
-                </p>
-              </div>
 
               <div className="space-y-4">
                 {analysis.headers.map((header: string) => {
@@ -477,22 +505,24 @@ export default function ImportPage() {
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
                           <h4 className="font-medium text-gray-900 mb-2">{header}</h4>
-                          {defaultSkipped && !userOverride && (
-                            <p className="text-xs text-orange-600 mb-2">
-                              This field is typically not used for customer records in {analysis.detectedFormat} format, but you can override it to create as a custom field
-                            </p>
-                          )}
+
                           <div className="flex items-center space-x-4">
                             <select
                               value={defaultValue}
                               onChange={(e) => {
                                 const newMappings = { ...customMappings };
-                                if (e.target.value === 'skip') {
-                                  newMappings[header] = 'skip';
-                                } else if (e.target.value === 'custom') {
+                                const value = e.target.value;
+                                
+                                // Validate the value to prevent corruption
+                                if (value === 'skip') {
+                                  // Double check that we're using the correct string
+                                  const skipValue = 'skip';
+                                  newMappings[header] = skipValue;
+                                  console.log(`Set field ${header} to:`, skipValue, 'chars:', Array.from(skipValue).map(c => c.charCodeAt(0)));
+                                } else if (value === 'custom') {
                                   newMappings[header] = 'custom';
                                 } else {
-                                  newMappings[header] = e.target.value;
+                                  newMappings[header] = value;
                                 }
                                 setCustomMappings(newMappings);
                               }}
@@ -661,7 +691,6 @@ export default function ImportPage() {
                     <div className="text-center">
                       <div className="text-2xl font-bold text-gray-600">{analysis.skippedFields.length}</div>
                       <div className="text-sm text-gray-600">Optional Fields</div>
-                      <div className="text-xs text-gray-500 mt-1">Fields not typically used for customer records, default to skipped but can be enabled as custom fields</div>
                     </div>
                   </div>
                 </div>
