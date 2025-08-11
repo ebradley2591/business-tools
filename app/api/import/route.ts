@@ -12,8 +12,7 @@ async function createCustomField(
   sampleValues: string[]
 ) {
   try {
-    console.log(`Import API: Creating custom field '${fieldName}' for tenant ${tenantId} with type ${fieldType}`);
-    console.log(`Import API: Sample values for '${fieldName}':`, sampleValues.slice(0, 5));
+
     
     // Check if a custom field with this name already exists for this tenant
     const existingFieldQuery = await adminDb.collection('customFields')
@@ -24,7 +23,7 @@ async function createCustomField(
     
     if (!existingFieldQuery.empty) {
       // Field already exists, return the existing field ID
-      console.log(`Import API: Custom field '${fieldName}' already exists for tenant ${tenantId}, skipping creation`);
+
       return existingFieldQuery.docs[0].id;
     }
 
@@ -56,13 +55,13 @@ async function createCustomField(
       (customFieldData as any).options = uniqueValues.slice(0, 20); // Limit to 20 options
     }
 
-    console.log(`Import API: Custom field data for '${fieldName}':`, customFieldData);
+
 
     const docRef = await adminDb.collection('customFields').add(customFieldData);
-    console.log(`Import API: Successfully created new custom field '${fieldName}' for tenant ${tenantId} with ID: ${docRef.id}`);
+
     return docRef.id;
   } catch (error) {
-    console.error(`Import API: Error creating custom field '${fieldName}':`, error);
+
     return null;
   }
 }
@@ -187,10 +186,7 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'File must be a CSV' }, { status: 400 });
       }
 
-      console.log('Import API: User authenticated:', user.email);
-      console.log('Import API: File received:', file.name, file.size, 'bytes');
-      console.log('Import API: Custom mappings:', customMappings);
-      console.log('Import API: Duplicate handling:', duplicateHandling);
+
 
       const fileContent = await file.text();
       
@@ -209,7 +205,7 @@ export async function POST(request: NextRequest) {
         ...doc.data()
       }));
 
-      console.log('Import API: Found', existingCustomers.length, 'existing customers for duplicate checking');
+
 
       // Normalize and analyze the CSV file using the new service
       const normalizedContent = CSVImportService.normalizeFileContent(fileContent);
@@ -217,7 +213,7 @@ export async function POST(request: NextRequest) {
       
       // Apply custom mappings to the analysis
       if (Object.keys(customMappings).length > 0) {
-        console.log('Import API: Applying custom mappings to field mapping');
+
         
         // Reset the analysis based on custom mappings
         analysis.fieldMapping = {};
@@ -262,32 +258,20 @@ export async function POST(request: NextRequest) {
         });
       }
       
-      console.log('Import API: Analysis completed:', {
-        format: analysis.detectedFormat,
-        totalRows: analysis.totalRows,
-        standardFields: Object.keys(analysis.fieldMapping).filter(key => !analysis.fieldMapping[key].startsWith('custom_')).length,
-        customFields: analysis.customFieldsToCreate.length,
-        skippedFields: analysis.skippedFields.length,
-        customMappingsApplied: Object.keys(customMappings).length
-      });
+
 
       // Create custom fields in the database
       const createdCustomFields: Record<string, string> = {};
-      console.log('Import API: Starting custom field creation for', analysis.customFieldsToCreate.length, 'fields');
-      console.log('Import API: Custom fields to create:', analysis.customFieldsToCreate.map(f => f.name));
+
       
       for (const customField of analysis.customFieldsToCreate) {
-        console.log(`Import API: Processing custom field: ${customField.name} (type: ${customField.type})`);
         const fieldId = await createCustomField(user.tenant_id, customField.name, customField.type as any, customField.values);
         if (fieldId) {
           createdCustomFields[customField.name] = fieldId;
-          console.log(`Import API: Custom field '${customField.name}' created/retrieved with ID: ${fieldId}`);
-        } else {
-          console.error(`Import API: Failed to create custom field '${customField.name}'`);
         }
       }
       
-      console.log('Import API: Custom field creation completed. Created fields:', Object.keys(createdCustomFields));
+
 
       // Process all rows using normalized content
       const lines = normalizedContent.split('\n').filter(line => line.trim());
@@ -296,12 +280,12 @@ export async function POST(request: NextRequest) {
       const duplicates: Array<{ row: number; customer: any; existingCustomer: any; reason: string }> = [];
       const skipped: Array<{ row: number; customer: any; reason: string }> = [];
 
-      console.log('Import API: Processing', lines.length - 1, 'data rows');
+
 
       for (let i = 1; i < lines.length; i++) {
         const line = lines[i].trim();
         if (!line) {
-          console.log('Import API: Skipping empty line at row', i);
+
           continue;
         }
 
@@ -312,11 +296,7 @@ export async function POST(request: NextRequest) {
           row[header] = values[index] || '';
         });
 
-        console.log('Import API: Processing row', i, 'with data:', {
-          name: row['Customer Name'] || row['Name'] || 'No name',
-          phone: row['Telephone 1'] || row['Phone'] || 'No phone',
-          hasData: Object.values(row).some(val => val && typeof val === 'string' && val.trim() !== '')
-        });
+
 
         // Process customer data using the service
         const result = await CSVImportService.processCustomerData(row, analysis.fieldMapping, i);
@@ -358,7 +338,7 @@ export async function POST(request: NextRequest) {
               };
               
               await adminDb.collection('customers').doc(existingCustomer.id).update(updateData);
-              console.log('Import API: Updated existing customer:', existingCustomer.name);
+
               
               // Add to duplicates array for reporting
               duplicates.push({
@@ -368,7 +348,7 @@ export async function POST(request: NextRequest) {
                 reason: `Updated: ${duplicateCheck.duplicateReason}`
               });
             } catch (error) {
-              console.error('Import API: Error updating customer:', error);
+
               errors.push({
                 row: i,
                 field: 'database',
@@ -390,7 +370,7 @@ export async function POST(request: NextRequest) {
               };
               
               await adminDb.collection('customers').doc(existingCustomer.id).set(overwriteData);
-              console.log('Import API: Overwrote existing customer:', existingCustomer.name);
+
               
               // Add to duplicates array for reporting
               duplicates.push({
@@ -400,7 +380,7 @@ export async function POST(request: NextRequest) {
                 reason: `Overwritten: ${duplicateCheck.duplicateReason}`
               });
             } catch (error) {
-              console.error('Import API: Error overwriting customer:', error);
+
               errors.push({
                 row: i,
                 field: 'database',
@@ -416,38 +396,56 @@ export async function POST(request: NextRequest) {
         customers.push(result.data);
       }
 
-      console.log('Import API: Valid customers to import:', customers.length);
-      console.log('Import API: Errors found:', errors.length);
-      console.log('Import API: Duplicates handled:', duplicates.length);
-      console.log('Import API: Skipped:', skipped.length);
+
 
       // Check if adminDb is available
       if (!adminDb) {
-        console.error('Import API: Firebase Admin DB not initialized');
+
         return NextResponse.json({ error: 'Database not available' }, { status: 500 });
       }
 
-      // Insert new customers
+      // Insert new customers using batch processing to handle Firestore's 500 operations per batch limit
       const customersRef = adminDb.collection('customers');
       let importedCount = 0;
+      let batchCount = 0;
 
-      for (const customer of customers) {
+      // Process in batches of 400 to stay safely under Firestore's 500 operations per batch limit
+      const BATCH_SIZE = 400;
+      
+      // Create batches of customers
+      for (let i = 0; i < customers.length; i += BATCH_SIZE) {
         try {
-          await customersRef.add(customer);
-          importedCount++;
-          console.log('Import API: Successfully imported customer:', customer.name);
+          const batch = adminDb.batch();
+          const currentBatch = customers.slice(i, i + BATCH_SIZE);
+          
+          // Add each customer in the current batch
+          for (const customer of currentBatch) {
+            const docRef = customersRef.doc();
+            batch.set(docRef, customer);
+          }
+          
+          // Commit the batch
+          await batch.commit();
+          
+          // Update counts
+          importedCount += currentBatch.length;
+          batchCount++;
+          
         } catch (error) {
-          console.error('Import API: Error importing customer:', customer.name, error);
-          errors.push({
-            row: 0,
-            field: 'database',
-            error: `Failed to save customer: ${error}`,
-            data: customer
-          });
+          // If a batch fails, add each customer in the batch to the errors array
+          const failedBatch = customers.slice(i, i + BATCH_SIZE);
+          for (const customer of failedBatch) {
+            errors.push({
+              row: 0,
+              field: 'database',
+              error: `Failed to save customer in batch ${batchCount + 1}: ${error}`,
+              data: customer
+            });
+          }
         }
       }
 
-      console.log('Import API: Total imported:', importedCount);
+
 
       return NextResponse.json({ 
         success: true, 
@@ -457,12 +455,13 @@ export async function POST(request: NextRequest) {
         customFieldsCreated: Object.keys(createdCustomFields).length,
         duplicates: duplicates.length,
         skipped: skipped.length,
+        batches: batchCount,
         errors: errors.slice(0, 10), // Limit error response
         warnings: analysis.validationIssues,
         fieldMapping: analysis.fieldMapping
       });
     } catch (error) {
-      console.error('Import API: Error processing import:', error);
+
       return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
   })(request);

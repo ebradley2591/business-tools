@@ -202,6 +202,11 @@ export default function ImportPage() {
           message = 'Import completed successfully.';
         }
         
+        // Add details about batches processed
+        if (data.batches > 0) {
+          message += ` Processed in ${data.batches} batch${data.batches > 1 ? 'es' : ''}.`;
+        }
+        
         // Add details about custom fields
         if (data.customFieldsCreated > 0) {
           message += ` Created ${data.customFieldsCreated} custom fields automatically.`;
