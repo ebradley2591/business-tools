@@ -68,11 +68,7 @@ export default function ImportPage() {
             initialMappings[header] = 'custom';
           } else if (data.analysis.skippedFields.includes(header)) {
             initialMappings[header] = 'skip';
-            // Special debugging for the Inactive field
-            if (header === 'Inactive') {
-              console.log('Frontend: Processing Inactive field - setting to skip');
-              console.log('Frontend: Inactive field mapping value:', initialMappings[header]);
-            }
+
           } else if (mapping) {
             initialMappings[header] = mapping;
           } else {
@@ -81,18 +77,7 @@ export default function ImportPage() {
           }
         });
         
-        console.log('Frontend: Analysis data received:', data.analysis);
-        console.log('Frontend: Skipped fields from backend:', data.analysis.skippedFields);
-        console.log('Frontend: Initial mappings created:', initialMappings);
-        console.log('Frontend: All mapping values:', Object.values(initialMappings));
-        
-        // Additional debugging for the Inactive field specifically
-        if (initialMappings['Inactive']) {
-          console.log('Frontend: Inactive field final mapping:', initialMappings['Inactive']);
-          console.log('Frontend: Inactive field type:', typeof initialMappings['Inactive']);
-          console.log('Frontend: Inactive field length:', initialMappings['Inactive'].length);
-          console.log('Frontend: Inactive field char codes:', Array.from(initialMappings['Inactive']).map(c => c.charCodeAt(0)));
-        }
+
         
         setCustomMappings(initialMappings);
         
@@ -115,18 +100,11 @@ export default function ImportPage() {
 
     setAnalyzing(true);
     
-    // Debug logging
-    console.log('Frontend: Analysis headers:', analysis.headers);
-    console.log('Frontend: Custom mappings:', customMappings);
-    console.log('Frontend: Duplicate handling:', duplicateHandling);
-    console.log('Frontend: Custom mappings values:', Object.values(customMappings));
-    
     // Sanitize mappings to prevent corruption
     const sanitizedMappings = { ...customMappings };
     Object.keys(sanitizedMappings).forEach(key => {
       // Fix any corrupted 'ship' values to 'skip'
       if (sanitizedMappings[key] === 'ship') {
-        console.log(`Frontend: Fixing corrupted value for ${key} from 'ship' to 'skip'`);
         sanitizedMappings[key] = 'skip';
       }
     });
@@ -136,13 +114,7 @@ export default function ImportPage() {
       setCustomMappings(sanitizedMappings);
     }
     
-    // Additional debugging for the Inactive field specifically
-    if (customMappings['Inactive']) {
-      console.log('Frontend: Inactive field before sending to backend:', customMappings['Inactive']);
-      console.log('Frontend: Inactive field type before sending:', typeof customMappings['Inactive']);
-      console.log('Frontend: Inactive field length before sending:', customMappings['Inactive'].length);
-      console.log('Frontend: Inactive field char codes before sending:', Array.from(customMappings['Inactive']).map(c => c.charCodeAt(0)));
-    }
+
     
     try {
       const token = await getAuthToken();
@@ -151,7 +123,7 @@ export default function ImportPage() {
         customMappings: sanitizedMappings, // Use sanitized mappings
         duplicateHandling
       };
-      console.log('Frontend: Request body being sent:', requestBody);
+
       
       const response = await fetch('/api/import/map-fields', {
         method: 'POST',
@@ -180,12 +152,12 @@ export default function ImportPage() {
         setUploadStatus('success');
         setShowFieldMapping(false);
       } else {
-        console.log('Frontend: API error response:', data);
+
         setMessage(data.error || 'Failed to update field mappings.');
         setUploadStatus('error');
       }
     } catch (error) {
-      console.error('Frontend: Error in updateFieldMappings:', error);
+
       setMessage('An error occurred while updating field mappings.');
       setUploadStatus('error');
     } finally {
@@ -518,7 +490,7 @@ export default function ImportPage() {
                                   // Double check that we're using the correct string
                                   const skipValue = 'skip';
                                   newMappings[header] = skipValue;
-                                  console.log(`Set field ${header} to:`, skipValue, 'chars:', Array.from(skipValue).map(c => c.charCodeAt(0)));
+
                                 } else if (value === 'custom') {
                                   newMappings[header] = 'custom';
                                 } else {
