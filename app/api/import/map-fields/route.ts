@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
     if (invalidMappings.length > 0) {
       // Get which specific fields have invalid mappings
       const invalidFields = Object.entries(customMappings)
-        .filter(([header, mapping]) => !validMappings.includes(mapping as string))
+        .filter(([_, mapping]) => !validMappings.includes(mapping as string))
         .map(([header, mapping]) => ({ header, mapping }));
       
       return NextResponse.json({ 
