@@ -740,8 +740,8 @@ export default function ImportPage() {
             Import Details (for troubleshooting)
           </h3>
           <div className="text-xs text-blue-700 space-y-1">
-            <p>Please check your browser's console (F12 > Console tab) for detailed import logs.</p>
-            <p>If you're experiencing issues with imports, please share these details with support.</p>
+            <p>Please check your browser&apos;s console (F12 then Console tab) for detailed import logs.</p>
+            <p>If you&apos;re experiencing issues with imports, please share these details with support.</p>
           </div>
         </div>
       )}
