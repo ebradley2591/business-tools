@@ -15,8 +15,10 @@ export async function GET(request: NextRequest) {
     console.log('Getting customers for tenant:', user.tenant_id);
     
     // Get customers scoped to the user's tenant
+    // Explicitly set a high limit to ensure we get all records
     const customersRef = adminDb.collection('customers')
-      .where('tenant_id', '==', user.tenant_id);
+      .where('tenant_id', '==', user.tenant_id)
+      .limit(10000);
     const snapshot = await customersRef.get();
     console.log('Found', snapshot.docs.length, 'customers for tenant', user.tenant_id);
     

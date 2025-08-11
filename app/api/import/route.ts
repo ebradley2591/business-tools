@@ -217,8 +217,11 @@ export async function POST(request: NextRequest) {
 
       // Get existing customers for duplicate checking
       console.log(`Fetching existing customers for tenant: ${user.tenant_id} for duplicate checking`);
+      
+      // Remove any potential limit on the query and explicitly set a high limit
       const existingCustomersSnapshot = await adminDb.collection('customers')
         .where('tenant_id', '==', user.tenant_id)
+        .limit(10000) // Set a very high limit to ensure we get all records
         .get();
       
       const existingCustomers = existingCustomersSnapshot.docs.map(doc => ({
