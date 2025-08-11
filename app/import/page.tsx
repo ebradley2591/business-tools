@@ -272,17 +272,22 @@ export default function ImportPage() {
           Upload a CSV file to import customer data into the directory.
         </p>
         {/* Debug panel for developers - will show in browser console */}
-        <div className="hidden">
-          {console.log('Current import state:', {
-            selectedFile: selectedFile?.name,
-            analyzing,
-            uploading,
-            uploadStatus,
-            duplicateHandling,
-            hasAnalysis: !!analysis,
-            hasPreview: !!preview,
-            mappingsCount: Object.keys(customMappings).length
-          })}
+        <div className="hidden" suppressHydrationWarning>
+          <span style={{ display: 'none' }}>
+            {/* Using useEffect in a component would be better, but this is a quick fix */}
+            {typeof window !== 'undefined' && 
+              console.log('Current import state:', {
+                selectedFile: selectedFile?.name,
+                analyzing,
+                uploading,
+                uploadStatus,
+                duplicateHandling,
+                hasAnalysis: !!analysis,
+                hasPreview: !!preview,
+                mappingsCount: Object.keys(customMappings).length
+              })
+            }
+          </span>
         </div>
       </div>
 
