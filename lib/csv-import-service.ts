@@ -10,6 +10,7 @@ export const CSV_FORMATS: Record<string, {
     name: 'Sage 50',
     fieldMappings: {
       'Customer Name': 'name',
+      'Customer ID': 'customerId',
       'Telephone 1': 'phone',
       'Telephone 2': 'secondaryContactPhone',
       'Customer E-mail': 'email',
@@ -29,7 +30,7 @@ export const CSV_FORMATS: Record<string, {
       'Property Owner': 'ownershipHistory',
     },
     skipFields: [
-      'Customer ID', 'Prospect', 'Inactive', 'Bill to Contact First Name',
+      'Prospect', 'Inactive', 'Bill to Contact First Name',
       'Bill to Contact Last Name', 'Bill to Country', 'Bill to Sales Tax ID',
       'Ship to Address 1-Line One', 'Ship to Address 1-Line Two', 'Ship to City 1',
       'Ship to State 1', 'Ship to Zipcode 1', 'Ship to Country 1', 'Ship to Sales Tax ID 1',
@@ -49,6 +50,7 @@ export const CSV_FORMATS: Record<string, {
     name: 'QuickBooks',
     fieldMappings: {
       'Customer': 'name',
+      'Customer ID': 'customerId',
       'Phone': 'phone',
       'Email': 'email',
       'Address': 'address1',
@@ -64,7 +66,7 @@ export const CSV_FORMATS: Record<string, {
       'Property Owner': 'ownershipHistory',
     },
     skipFields: [
-      'Customer ID', 'Balance', 'Terms', 'Tax Code', 'Tax Item',
+      'Balance', 'Terms', 'Tax Code', 'Tax Item',
       'Ship To', 'Bill To', 'Credit Limit', 'Job Status'
     ]
   },
@@ -75,6 +77,10 @@ export const CSV_FORMATS: Record<string, {
       'Customer Name': 'name',
       'Company Name': 'name',
       'Business Name': 'name',
+      'Customer ID': 'customerId',
+      'ID': 'customerId',
+      'Internal ID': 'customerId',
+      'Reference ID': 'customerId',
       'Phone': 'phone',
       'Phone Number': 'phone',
       'Telephone': 'phone',
@@ -121,7 +127,7 @@ export const CSV_FORMATS: Record<string, {
       'Last Visit': 'lastActivity'
     },
     skipFields: [
-      'ID', 'Customer ID', 'Internal ID', 'Reference', 'Status', 'Active',
+      'Reference', 'Status', 'Active',
       'Balance', 'Credit Limit', 'Terms', 'Tax Code', 'Tax Item',
       'Ship To', 'Bill To', 'Job Status', 'Priority', 'Rating'
     ]
@@ -139,6 +145,7 @@ export const FIELD_DISPLAY_NAMES: Record<string, string> = {
   phone: 'Phone Number',
   email: 'Email Address',
   address: 'Address',
+  customerId: 'Customer ID',
   secondaryContactName: 'Secondary Contact Name',
   secondaryContactPhone: 'Secondary Contact Phone',
   notes: 'Notes',
@@ -590,6 +597,9 @@ export class CSVImportService {
         switch (mappedField) {
           case 'name':
             customerData.name = sanitizeString(value);
+            break;
+          case 'customerId':
+            customerData.customerId = sanitizeString(value);
             break;
           case 'phone':
             customerData.phone = sanitizePhone(value);

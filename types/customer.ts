@@ -1,6 +1,7 @@
 export interface Customer {
   id?: string;
   tenant_id: string; // Multi-tenant support
+  customerId?: string; // External/imported customer ID for uniqueness checks
   name: string;
   phone: string;
   address: string;
@@ -30,6 +31,7 @@ export interface CustomerFormData {
   phone: string;
   address: string;
   email?: string;
+  customerId?: string;
   secondaryContactName?: string;
   secondaryContactPhone?: string;
   customerType?: string;

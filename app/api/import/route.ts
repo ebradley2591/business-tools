@@ -71,7 +71,21 @@ async function checkForDuplicates(
   customerData: any,
   existingCustomers: any[]
 ): Promise<{ isDuplicate: boolean; existingCustomer?: any; duplicateReason: string }> {
-  // Check by phone number (most reliable)
+  // Check by Customer ID first (most reliable if available)
+  if (customerData.customerId) {
+    const idDuplicate = existingCustomers.find(c => 
+      c.customerId && c.customerId.toString().trim() === customerData.customerId.toString().trim()
+    );
+    if (idDuplicate) {
+      return { 
+        isDuplicate: true, 
+        existingCustomer: idDuplicate, 
+        duplicateReason: 'Customer ID already exists' 
+      };
+    }
+  }
+
+  // Check by phone number (second most reliable)
   if (customerData.phone) {
     const phoneDuplicate = existingCustomers.find(c => 
       c.phone === customerData.phone || 
@@ -87,20 +101,6 @@ async function checkForDuplicates(
     }
   }
 
-  // Check by name (exact match)
-  if (customerData.name) {
-    const nameDuplicate = existingCustomers.find(c => 
-      c.name.toLowerCase().trim() === customerData.name.toLowerCase().trim()
-    );
-    if (nameDuplicate) {
-      return { 
-        isDuplicate: true, 
-        existingCustomer: nameDuplicate, 
-        duplicateReason: 'Customer name already exists' 
-      };
-    }
-  }
-
   // Check by email (if available)
   if (customerData.email) {
     const emailDuplicate = existingCustomers.find(c => 
@@ -111,6 +111,20 @@ async function checkForDuplicates(
         isDuplicate: true, 
         existingCustomer: emailDuplicate, 
         duplicateReason: 'Email address already exists' 
+      };
+    }
+  }
+  
+  // Check by name (least reliable, but still useful)
+  if (customerData.name) {
+    const nameDuplicate = existingCustomers.find(c => 
+      c.name.toLowerCase().trim() === customerData.name.toLowerCase().trim()
+    );
+    if (nameDuplicate) {
+      return { 
+        isDuplicate: true, 
+        existingCustomer: nameDuplicate, 
+        duplicateReason: 'Customer name already exists' 
       };
     }
   }
