@@ -192,6 +192,17 @@ export default function ImportPage() {
         setUploadStatus('success');
         let message = '';
         
+        // Log detailed import results to console for debugging
+        console.log('Import Results:', {
+          total: data.total,
+          imported: data.imported,
+          duplicates: data.duplicates,
+          skipped: data.skipped,
+          failed: data.failed,
+          batches: data.batches,
+          customFieldsCreated: data.customFieldsCreated
+        });
+        
         // Show different messages based on what happened
         if (data.imported > 0) {
           message = `Successfully imported ${data.imported} new customers.`;
@@ -201,6 +212,9 @@ export default function ImportPage() {
         } else {
           message = 'Import completed successfully.';
         }
+        
+        // Add details about total records processed
+        message += ` Total records processed: ${data.total}.`;
         
         // Add details about batches processed
         if (data.batches > 0) {
@@ -227,6 +241,12 @@ export default function ImportPage() {
         if (data.skipped > 0) {
           message += ` Skipped ${data.skipped} duplicate customers.`;
         }
+        
+        // Add details about failed records
+        if (data.failed > 0) {
+          message += ` Failed to process ${data.failed} records due to errors.`;
+        }
+        
         setMessage(message);
         setSelectedFile(null);
         // Reset file input
@@ -251,6 +271,19 @@ export default function ImportPage() {
         <p className="mt-2 text-gray-600">
           Upload a CSV file to import customer data into the directory.
         </p>
+        {/* Debug panel for developers - will show in browser console */}
+        <div className="hidden">
+          {console.log('Current import state:', {
+            selectedFile: selectedFile?.name,
+            analyzing,
+            uploading,
+            uploadStatus,
+            duplicateHandling,
+            hasAnalysis: !!analysis,
+            hasPreview: !!preview,
+            mappingsCount: Object.keys(customMappings).length
+          })}
+        </div>
       </div>
 
       <div className="bg-white rounded-lg shadow p-6">
@@ -696,6 +729,19 @@ export default function ImportPage() {
                 Close
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      
+      {/* Debug information panel - visible to users */}
+      {uploadStatus === 'success' && (
+        <div className="mt-4 bg-blue-50 rounded-lg p-4 border border-blue-200">
+          <h3 className="text-sm font-medium text-blue-800 mb-2">
+            Import Details (for troubleshooting)
+          </h3>
+          <div className="text-xs text-blue-700 space-y-1">
+            <p>Please check your browser's console (F12 > Console tab) for detailed import logs.</p>
+            <p>If you're experiencing issues with imports, please share these details with support.</p>
           </div>
         </div>
       )}
