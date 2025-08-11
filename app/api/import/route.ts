@@ -166,11 +166,17 @@ function inferFieldType(values: string[]): 'text' | 'number' | 'date' | 'boolean
 export async function POST(request: NextRequest) {
   return withImportRateLimit(async (req: NextRequest) => {
     try {
+      console.log('Starting CSV import process');
+      
       const user = await verifyTenantAdminAccess(req);
       
       if (!user) {
+        console.log('Unauthorized access attempt - missing or invalid tenant admin credentials');
         return NextResponse.json({ error: 'Unauthorized - Tenant Admin access required' }, { status: 401 });
       }
+      
+      console.log(`Authorized import for tenant: ${user.tenant_id}`);
+      
 
       const formData = await req.formData();
       const file = formData.get('file') as File;
@@ -210,6 +216,7 @@ export async function POST(request: NextRequest) {
       }
 
       // Get existing customers for duplicate checking
+      console.log(`Fetching existing customers for tenant: ${user.tenant_id} for duplicate checking`);
       const existingCustomersSnapshot = await adminDb.collection('customers')
         .where('tenant_id', '==', user.tenant_id)
         .get();
@@ -218,6 +225,8 @@ export async function POST(request: NextRequest) {
         id: doc.id,
         ...doc.data()
       }));
+      
+      console.log(`Found ${existingCustomers.length} existing customers for duplicate checking`);
 
 
 
@@ -426,16 +435,24 @@ export async function POST(request: NextRequest) {
       // Process in batches of 400 to stay safely under Firestore's 500 operations per batch limit
       const BATCH_SIZE = 400;
       
+      console.log(`Starting batch import of ${customers.length} customers with batch size ${BATCH_SIZE}`);
+      
       // Create batches of customers
       for (let i = 0; i < customers.length; i += BATCH_SIZE) {
         try {
           const batch = adminDb.batch();
           const currentBatch = customers.slice(i, i + BATCH_SIZE);
           
+          console.log(`Processing batch ${batchCount + 1} with ${currentBatch.length} customers (${i} to ${i + currentBatch.length - 1})`);
+          
           // Add each customer in the current batch
           for (const customer of currentBatch) {
             const docRef = customersRef.doc();
-            batch.set(docRef, customer);
+            batch.set(docRef, {
+              ...customer,
+              createdAt: new Date(), // Ensure createdAt is set
+              updatedAt: new Date()  // Ensure updatedAt is set
+            });
           }
           
           // Commit the batch
@@ -445,8 +462,12 @@ export async function POST(request: NextRequest) {
           importedCount += currentBatch.length;
           batchCount++;
           
+          console.log(`Successfully committed batch ${batchCount} with ${currentBatch.length} customers. Total imported: ${importedCount}`);
+          
         } catch (error) {
-          // If a batch fails, add each customer in the batch to the errors array
+          // If a batch fails, log the error and add each customer in the batch to the errors array
+          console.error(`Error in batch ${batchCount + 1}:`, error);
+          
           const failedBatch = customers.slice(i, i + BATCH_SIZE);
           for (const customer of failedBatch) {
             errors.push({
@@ -461,6 +482,17 @@ export async function POST(request: NextRequest) {
 
 
 
+      // Log summary before returning response
+      console.log(`Import summary:
+        - Total records processed: ${customers.length + errors.length + duplicates.length + skipped.length}
+        - Successfully imported: ${importedCount}
+        - Duplicates processed: ${duplicates.length}
+        - Skipped records: ${skipped.length}
+        - Failed records: ${errors.length}
+        - Batches processed: ${batchCount}
+        - Custom fields created: ${Object.keys(createdCustomFields).length}
+      `);
+      
       return NextResponse.json({ 
         success: true, 
         imported: importedCount,
