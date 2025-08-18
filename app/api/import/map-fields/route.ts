@@ -25,8 +25,16 @@ export async function POST(request: NextRequest) {
 
 
 
-    // Validate custom mappings - allow "custom" as a valid mapping
-    const validMappings = ['name', 'phone', 'email', 'address', 'address1', 'address2', 'city', 'state', 'zip', 'secondaryContactName', 'secondaryContactPhone', 'notes', 'tags', 'ownershipHistory', 'customerType', 'accountNumber', 'createdDate', 'lastActivity', 'custom', 'skip'];
+    // Validate custom mappings - allow "custom" and common standard fields
+    const validMappings = [
+      'name', 'phone', 'email',
+      'address', 'address1', 'address2', 'city', 'state', 'zip',
+      'customerId',
+      'secondaryContactName', 'secondaryContactPhone',
+      'notes', 'tags', 'ownershipHistory', 'customerType', 'accountNumber',
+      'createdDate', 'lastActivity',
+      'custom', 'skip'
+    ];
     
     // Fix any potential 'ship' corruption to 'skip'
     Object.keys(customMappings).forEach(key => {
@@ -37,6 +45,16 @@ export async function POST(request: NextRequest) {
     
 
     
+    // Normalize mappings: for any header without a value or with an invalid value, default to 'custom'
+    headers.forEach((header: string) => {
+      const value = customMappings[header];
+      if (value === undefined || value === null || value === '') {
+        customMappings[header] = 'custom';
+      } else if (!validMappings.includes(String(value))) {
+        customMappings[header] = 'custom';
+      }
+    });
+
     const invalidMappings = Object.values(customMappings).filter(mapping => !validMappings.includes(mapping as string));
     if (invalidMappings.length > 0) {
       // Get which specific fields have invalid mappings

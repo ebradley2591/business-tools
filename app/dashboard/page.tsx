@@ -372,7 +372,7 @@ export default function DashboardPage() {
         <div className="bg-white rounded-lg shadow overflow-hidden">
           {/* Bulk Delete Controls */}
           {canBulkDelete && (
-            <div className="px-6 py-3 bg-gray-50 border-b border-gray-200">
+            <div className="px-3 py-2 bg-gray-50 border-b border-gray-200">
               <div className="flex items-center justify-between">
                 <div className="flex items-center space-x-4">
                   <label className="flex items-center">
@@ -396,9 +396,9 @@ export default function DashboardPage() {
                   <button
                     onClick={handleBulkDelete}
                     disabled={bulkDeleteLoading}
-                    className="btn-danger flex items-center text-sm"
+                    className="btn-danger flex items-center text-sm py-1 px-2"
                   >
-                    <Trash2 className="h-4 w-4 mr-2" />
+                    <Trash2 className="h-4 w-4 mr-1" />
                     {bulkDeleteLoading ? 'Deleting...' : `Delete ${selectedCustomers.length} Customer${selectedCustomers.length > 1 ? 's' : ''}`}
                   </button>
                 )}
@@ -406,29 +406,29 @@ export default function DashboardPage() {
             </div>
           )}
           <div className="overflow-x-auto">
-            <table className="w-full divide-y divide-gray-200 table-fixed" style={{ minWidth: '100%' }}>
+            <table className="w-full divide-y divide-gray-200">
               <thead className="bg-gray-50">
                 <tr>
-                  {canBulkDelete && <th className="table-header" style={{ width: '5%' }}></th>}
-                  {visibleColumns.customerId && <th className="table-header" style={{ width: '12%' }}>Customer ID</th>}
-                  {visibleColumns.name && <th className="table-header" style={{ width: '15%' }}>Name</th>}
-                  {visibleColumns.phone && <th className="table-header" style={{ width: '12%' }}>Phone</th>}
-                  {visibleColumns.address && <th className="table-header" style={{ width: '20%' }}>Address</th>}
-                  {visibleColumns.email && <th className="table-header" style={{ width: '15%' }}>Email</th>}
-                  {visibleColumns.customerType && <th className="table-header" style={{ width: '10%' }}>Customer Type</th>}
-                  {visibleColumns.accountNumber && <th className="table-header" style={{ width: '10%' }}>Account Number</th>}
-                  {visibleColumns.createdDate && <th className="table-header" style={{ width: '10%' }}>Customer Since</th>}
-                  {visibleColumns.lastActivity && <th className="table-header" style={{ width: '10%' }}>Last Activity</th>}
-                  {visibleColumns.tags && <th className="table-header" style={{ width: '12%' }}>Tags</th>}
+                  {canBulkDelete && <th className="table-header w-10"></th>}
+                  {visibleColumns.customerId && <th className="table-header w-24">Customer ID</th>}
+                  {visibleColumns.name && <th className="table-header w-32">Name</th>}
+                  {visibleColumns.phone && <th className="table-header w-28">Phone</th>}
+                  {visibleColumns.address && <th className="table-header w-40">Address</th>}
+                  {visibleColumns.email && <th className="table-header w-36">Email</th>}
+                  {visibleColumns.customerType && <th className="table-header w-24">Customer Type</th>}
+                  {visibleColumns.accountNumber && <th className="table-header w-24">Account Number</th>}
+                  {visibleColumns.createdDate && <th className="table-header w-24">Customer Since</th>}
+                  {visibleColumns.lastActivity && <th className="table-header w-24">Last Activity</th>}
+                  {visibleColumns.tags && <th className="table-header w-24">Tags</th>}
                   {/* Custom field columns */}
                   {customFields.map(field => 
                     visibleColumns[`custom_${field.id}`] && (
-                      <th key={field.id} className="table-header" style={{ width: '10%' }}>
+                      <th key={field.id} className="table-header w-24">
                         {field.name}
                       </th>
                     )
                   )}
-                  <th className="table-header" style={{ width: '16%' }}>Actions</th>
+                  <th className="table-header w-24 sticky right-0 bg-gray-50 shadow-l">Actions</th>
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
@@ -490,20 +490,20 @@ export default function DashboardPage() {
                       </td>
                     )}
                     {visibleColumns.tags && (
-                      <td className="table-cell">
-                        <div className="flex flex-wrap gap-1">
-                          {customer.tags.slice(0, 2).map(tag => (
-                            <span key={tag} className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                              {tag}
-                            </span>
-                          ))}
-                          {customer.tags.length > 2 && (
-                            <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
-                              +{customer.tags.length - 2}
-                            </span>
-                          )}
-                        </div>
-                      </td>
+                                          <td className="table-cell">
+                      <div className="flex flex-wrap gap-1 max-w-full">
+                        {customer.tags.slice(0, 1).map(tag => (
+                          <span key={tag} className="inline-flex items-center px-1 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 max-w-full truncate">
+                            {tag}
+                          </span>
+                        ))}
+                        {customer.tags.length > 1 && (
+                          <span className="inline-flex items-center px-1 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800">
+                            +{customer.tags.length - 1}
+                          </span>
+                        )}
+                      </div>
+                    </td>
                     )}
                     {/* Custom field values */}
                     {customFields.map(field => 
@@ -513,30 +513,30 @@ export default function DashboardPage() {
                         </td>
                       )
                     )}
-                    <td className="table-cell">
-                      <div className="flex items-center space-x-1">
+                    <td className="table-cell sticky right-0 bg-white">
+                      <div className="flex items-center gap-1">
                         <Link
                           href={`/dashboard/customer/${customer.id}`}
-                          className="text-blue-600 hover:text-blue-900 flex items-center text-sm"
+                          className="text-blue-600 hover:text-blue-900 flex items-center text-xs"
                         >
-                          <Eye className="h-3 w-3 mr-1" />
+                          <Eye className="h-3 w-3 mr-0.5" />
                           View
                         </Link>
                         {canManageSettings && (
                           <>
                             <button
                               onClick={() => setEditingCustomer(customer)}
-                              className="text-green-600 hover:text-green-900 flex items-center text-sm"
+                              className="text-green-600 hover:text-green-900 flex items-center text-xs"
                             >
-                              <Edit className="h-3 w-3 mr-1" />
+                              <Edit className="h-3 w-3 mr-0.5" />
                               Edit
                             </button>
                             <button
                               onClick={() => customer.id && handleDelete(customer.id)}
-                              className="text-red-600 hover:text-red-900 flex items-center text-sm"
+                              className="text-red-600 hover:text-red-900 flex items-center text-xs"
                             >
-                              <Trash2 className="h-3 w-3 mr-1" />
-                              Delete
+                              <Trash2 className="h-3 w-3 mr-0.5" />
+                              Del
                             </button>
                           </>
                         )}

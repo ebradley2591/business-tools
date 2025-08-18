@@ -275,18 +275,22 @@ export default function ImportPage() {
         <div className="hidden" suppressHydrationWarning>
           <span style={{ display: 'none' }}>
             {/* Using useEffect in a component would be better, but this is a quick fix */}
-            {typeof window !== 'undefined' && 
-              console.log('Current import state:', {
-                selectedFile: selectedFile?.name,
-                analyzing,
-                uploading,
-                uploadStatus,
-                duplicateHandling,
-                hasAnalysis: !!analysis,
-                hasPreview: !!preview,
-                mappingsCount: Object.keys(customMappings).length
-              })
-            }
+            {typeof window !== 'undefined' ? 
+              // Return null instead of void to satisfy ReactNode type
+              (() => {
+                console.log('Current import state:', {
+                  selectedFile: selectedFile?.name,
+                  analyzing,
+                  uploading,
+                  uploadStatus,
+                  duplicateHandling,
+                  hasAnalysis: !!analysis,
+                  hasPreview: !!preview,
+                  mappingsCount: Object.keys(customMappings).length
+                });
+                return null;
+              })()
+            : null}
           </span>
         </div>
       </div>

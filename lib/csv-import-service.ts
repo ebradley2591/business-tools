@@ -1,4 +1,4 @@
-import { sanitizeString, sanitizeEmail, sanitizePhone, sanitizeTags } from '@/lib/validation';
+import { sanitizeString, sanitizeEmail, sanitizePhone, sanitizeTags, validateCSVData } from '@/lib/validation';
 
 // CSV Format Definitions
 export const CSV_FORMATS: Record<string, {
@@ -74,6 +74,7 @@ export const CSV_FORMATS: Record<string, {
     name: 'Generic CSV',
     fieldMappings: {
       'Name': 'name',
+      'Customer': 'name',
       'Customer Name': 'name',
       'Company Name': 'name',
       'Business Name': 'name',
@@ -263,26 +264,7 @@ function detectCSVFormat(headers: string[]): string {
   return 'GENERIC';
 }
 
-// Validate CSV data
-function validateCSVData(data: any): { isValid: boolean; errors: string[] } {
-  const errors = [];
-  
-  // Required fields
-  if (!data.name?.trim()) errors.push('Name is required');
-  if (!data.phone?.trim()) errors.push('Phone is required');
-  
-  // Format validation
-  if (data.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
-    errors.push('Invalid email format');
-  }
-  
-  // Phone validation (basic)
-  if (data.phone && data.phone.replace(/\D/g, '').length < 10) {
-    errors.push('Phone number must have at least 10 digits');
-  }
-  
-  return { isValid: errors.length === 0, errors };
-}
+// Intentionally use the shared, lenient CSV validator from `lib/validation`
 
 export class CSVImportService {
   // Helper function to parse CSV line properly with enhanced character handling
@@ -676,11 +658,19 @@ export class CSVImportService {
       customerData.state,
       customerData.zip
     ].filter(Boolean);
-    customerData.address = addressParts.join(', ');
+    
+    if (addressParts.length > 0) {
+      customerData.address = addressParts.join(', ');
+    }
 
     // If no address was built from components, try to use a single address field
     if (!customerData.address && customerData.address1) {
       customerData.address = customerData.address1;
+    }
+    
+    // Set a default address if none exists to prevent validation errors
+    if (!customerData.address) {
+      customerData.address = "No address provided";
     }
 
     // Clean up temporary address fields
@@ -713,16 +703,36 @@ export class CSVImportService {
       }
     }
 
+    // Log raw data before validation
+    console.log(`Processing row ${rowNumber} - Raw data:`, JSON.stringify(customerData));
+    
     // Validate customer data
     const validation = validateCSVData(customerData);
     if (!validation.isValid) {
+      console.log(`Row ${rowNumber} validation failed:`, validation.errors);
       errors.push(...validation.errors.map(error => `Row ${rowNumber}: ${error}`));
     }
 
     // Ensure name is not just whitespace
     if (!customerData.name?.trim()) {
+      console.log(`Row ${rowNumber} name validation failed - Value:`, customerData.name);
       errors.push(`Row ${rowNumber}: Empty or invalid name`);
     }
+    
+    // Provide default address if missing
+    if (!customerData.address?.trim()) {
+      console.log(`Row ${rowNumber} missing address - providing default`);
+      customerData.address = 'No address provided';
+    }
+    
+    // Log field values for debugging
+    console.log(`Row ${rowNumber} field values:`, {
+      name: customerData.name,
+      phone: customerData.phone,
+      address: customerData.address,
+      email: customerData.email,
+      customerId: customerData.customerId
+    });
 
     return { data: customerData, errors };
   }

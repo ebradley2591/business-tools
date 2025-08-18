@@ -14,15 +14,46 @@ export async function GET(request: NextRequest) {
 
     console.log('Getting customers for tenant:', user.tenant_id);
     
-    // Get customers scoped to the user's tenant
-    // Explicitly set a high limit to ensure we get all records
-    const customersRef = adminDb.collection('customers')
-      .where('tenant_id', '==', user.tenant_id)
-      .limit(10000);
-    const snapshot = await customersRef.get();
-    console.log('Found', snapshot.docs.length, 'customers for tenant', user.tenant_id);
+    // Implement pagination to get all customers for this tenant
+    let allCustomers: any[] = [];
+    let lastDoc = null;
+    const QUERY_LIMIT = 500; // Firestore recommended batch size
     
-    const customers = snapshot.docs.map(doc => {
+    // First query
+    let customersQuery = adminDb.collection('customers')
+      .where('tenant_id', '==', user.tenant_id)
+      .limit(QUERY_LIMIT);
+    
+    let snapshot = await customersQuery.get();
+    
+    // Add first batch to our array
+    snapshot.docs.forEach(doc => {
+      allCustomers.push(doc);
+    });
+    
+    // Continue fetching while we have more documents
+    while (snapshot.docs.length === QUERY_LIMIT) {
+      // Get the last document from previous batch
+      lastDoc = snapshot.docs[snapshot.docs.length - 1];
+      
+      // Set up query for next batch starting after last doc
+      customersQuery = adminDb.collection('customers')
+        .where('tenant_id', '==', user.tenant_id)
+        .startAfter(lastDoc)
+        .limit(QUERY_LIMIT);
+      
+      // Get next batch
+      snapshot = await customersQuery.get();
+      
+      // Add this batch to our array
+      snapshot.docs.forEach(doc => {
+        allCustomers.push(doc);
+      });
+    }
+    
+    console.log('Found', allCustomers.length, 'customers for tenant', user.tenant_id);
+    
+    const customers = allCustomers.map(doc => {
       const data = doc.data();
       return {
         id: doc.id,

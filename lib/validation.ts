@@ -176,6 +176,67 @@ export function validateCustomerData(data: any) {
   }
 }
 
+// Function to validate CSV data with more lenient rules for imports
+export function validateCSVData(data: any) {
+  try {
+    // Create a more lenient schema for CSV imports
+    const result = { isValid: true, errors: [] as string[] };
+    
+    // Log full data object for debugging
+    console.log('Validating data object:', JSON.stringify(data));
+    
+    // Check required fields
+    if (!data.name) {
+      result.isValid = false;
+      result.errors.push('Name is required');
+      console.log('Name validation failed - Value:', data.name);
+    }
+    
+    if (!data.phone) {
+      console.log('Phone validation - Missing phone, providing default');
+      data.phone = 'No phone provided';
+    } else {
+      // Make phone more lenient by removing all non-numeric characters for validation
+      const cleanedPhone = data.phone.replace(/\D/g, '');
+      console.log('Phone validation - Original:', data.phone, 'Cleaned:', cleanedPhone, 'Length:', cleanedPhone.length);
+      
+      // Accept any phone number, no minimum length requirement
+      if (cleanedPhone.length === 0) {
+        console.log('Phone validation - No numeric digits in phone, providing default');
+        data.phone = 'No valid phone provided';
+      }
+    }
+    
+    // Check email format if provided and not empty
+    if (data.email && data.email.trim() !== '') {
+      console.log('Email validation - Value:', data.email);
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+        console.log('Email validation - Invalid format, providing sanitized version');
+        // Don't fail validation, just sanitize the email
+        data.email = 'invalid@example.com';
+      }
+    }
+    
+    // Make address optional - don't fail validation if missing
+    if (!data.address || data.address.trim() === '') {
+      console.log('Address missing - providing default value');
+      data.address = 'No address provided';
+    }
+    
+    // Log validation result
+    console.log('CSV validation result for', data.name || 'unnamed record', ':', 
+      result.isValid ? 'PASSED' : 'FAILED', result.errors);
+    
+    return result;
+  } catch (error) {
+    console.error('Validation error:', error);
+    return {
+      isValid: false,
+      errors: ['Validation failed: Unknown error']
+    };
+  }
+}
+
 export function validateCustomField(data: any) {
   try {
     return CustomFieldSchema.parse(data);
